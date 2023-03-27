@@ -233,6 +233,7 @@ MonoBehaviour:
       - 485.066
       - 0.463945
   hasPased: 1
+  editorShowPoseKeypoints: 1
   picSize: {x: 512, y: 512}
   worldScale: {x: 10, y: 10}
 --- !u!4 &194933548
