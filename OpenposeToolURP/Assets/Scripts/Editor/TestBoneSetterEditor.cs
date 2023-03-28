@@ -19,7 +19,7 @@ public class TestBoneSetterEditor : Editor
 
         if (GUILayout.Button("InitOpenposeMapping"))
         {
-            Target.InitOpenposeMapping();
+            TestBoneSetter.InitOpenposeMapping();
         }
 
         if (GUILayout.Button("PrintBones"))
@@ -35,6 +35,16 @@ public class TestBoneSetterEditor : Editor
         if (GUILayout.Button("Debug Openpose mapping"))
         {
             Target.DebugOpenposeMapping();
+        }
+
+        if (GUILayout.Button("RevertDebug"))
+        {
+            Target.RevertDebug();
+        }
+
+        if (GUILayout.Button("SetBodyPoseByOpenposeJson"))
+        {
+            Target.SetBodyPoseByOpenposeJson();
         }
     }
 }

@@ -81,8 +81,37 @@ public class OpenposeJsonLoader : MonoBehaviour
     {
         editorShowPoseKeypoints = true;
     }
+
+    public void GetBodyKey2D(int openID, out Vector2 uvPos, out float trust)
+    {
+        if(!hasPased)
+        {
+            Parse();
+        }
+        float pixX = rootData.people[0].pose_keypoints_2d[3 * openID];
+        float pixY = rootData.people[0].pose_keypoints_2d[3 * openID + 1];
+        uvPos.x = pixX / picSize.x;
+        uvPos.y = pixY / picSize.y;
+        uvPos = InverseV(uvPos);
+        trust = rootData.people[0].pose_keypoints_2d[3 * openID + 2];
+    }
+
+    //public Vector2 GetBodyKey2D(int openID)
+    //{
+    //    if (!hasPased)
+    //    {
+    //        Parse();
+    //    }
+    //    float pixX = rootData.people[0].pose_keypoints_2d[3 * openID];
+    //    float pixY = rootData.people[0].pose_keypoints_2d[3 * openID + 1];
+    //    Vector2 uvPos = Vector2.zero;
+    //    uvPos.x = pixX / picSize.x;
+    //    uvPos.y = pixY / picSize.y;
+    //    uvPos = InverseV(uvPos);
+    //    return uvPos;
+    //}
     //############################################################
-    public Vector2 InverseV(Vector2 uv)
+    Vector2 InverseV(Vector2 uv)
     {
         return new Vector2(uv.x, saturate(1 - uv.y));
     }
