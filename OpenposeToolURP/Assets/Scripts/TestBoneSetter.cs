@@ -94,8 +94,11 @@ public class TestBoneSetter : MonoBehaviour
 
         openposeHumanoidLegionDirMapping.Add(1, new Dictionary<int, HumanoidDefaltDir>());
 
-        openposeBodyMapping.Add(0,"");//nose
-        openposeBodyMapping.Add(1, "Neck"); openposeHumanoidLegionDirMapping[1].Add(2, HumanoidDefaltDir.right); openposeHumanoidLegionDirMapping[1].Add(5, HumanoidDefaltDir.nega_right);
+        openposeBodyMapping.Add(0, "Head");//nose
+        openposeBodyMapping.Add(1, "Neck");
+        openposeHumanoidLegionDirMapping[1].Add(2, HumanoidDefaltDir.right);
+        openposeHumanoidLegionDirMapping[1].Add(5, HumanoidDefaltDir.nega_right);
+        openposeHumanoidLegionDirMapping[1].Add(0, HumanoidDefaltDir.up);
 
         openposeBodyMapping.Add(2, "RightUpperArm"); openposeHumanoidDirMapping.Add(2, HumanoidDefaltDir.nega_up);
         openposeBodyMapping.Add(3, "RightLowerArm"); openposeHumanoidDirMapping.Add(3, HumanoidDefaltDir.nega_up);
@@ -247,6 +250,8 @@ public class TestBoneSetter : MonoBehaviour
         TryMapSetLegionPointRotation(1, 5, GetBoneInxByHumanName("LeftShoulder"));
         TryMapSetRotation(5, 6);
         TryMapSetRotation(6, 7);
+
+        TryMapSetLegionPointRotation(1, 0, GetBoneInxByHumanName("Neck"));
         //___
 
         if (loopnum == 1)
@@ -394,6 +399,29 @@ public class TestBoneSetter : MonoBehaviour
         trans.rotation = Quaternion.LookRotation(trans.forward, up);
     }
 
+    void SafeSetDirY(Transform trans, Vector3 newY)
+    {
+        //align x-y plane,z not change
+        Vector3 fwd;
+        float align1 = Vector3.Dot(newY, trans.up);
+        float align2 = Vector3.Dot(newY, trans.forward);
+        if (Mathf.Abs(align1) > 0.999)
+        {
+            fwd = trans.forward * Mathf.Sign(align1);
+        }
+        else if (Mathf.Abs(align2) > 0.999)
+        {
+            fwd = trans.up * Mathf.Sign(-align2);
+        }
+        else
+        {
+            float k = -Vector3.Dot(trans.up, newY) / Vector3.Dot(trans.forward, newY);
+            fwd = (trans.up + k * trans.forward).normalized;
+        }
+
+        trans.rotation = Quaternion.LookRotation(fwd, newY);
+    }
+
     void SetLegionHumanoidDir(int openID1, int realBone, Vector3 dir, int openID2)
     {
         //Debug.Log("set Legion dir");
@@ -412,42 +440,11 @@ public class TestBoneSetter : MonoBehaviour
         {
             SafeSetDirX(trans, -dir);
         }
-        //if (openposeHumanoidDirMapping[openID1] == HumanoidDefaltDir.up)
-        //{
-        //    var oriRight = trans.right;
-        //    trans.up = dir;
-        //    if (Vector3.Dot(oriRight, trans.right) < 0)
-        //    {//hand fix rotation inverse change
-        //        trans.rotation = trans.rotation * Quaternion.Euler(0, 180, 0);
-        //    }
-        //}
-        //else if (openposeHumanoidDirMapping[openID1] == HumanoidDefaltDir.nega_up)
-        //{
-        //    var oriRight = trans.right;
-        //    trans.up = -dir;
-        //    if (Vector3.Dot(oriRight, trans.right) < 0)
-        //    {//hand fix rotation inverse change
-        //        trans.rotation = trans.rotation * Quaternion.Euler(0, 180, 0);
-        //    }
-        //}
-        //else if (openposeHumanoidDirMapping[openID1] == HumanoidDefaltDir.fwd)
-        //{
-        //    var oriUp = trans.up;
-        //    trans.forward = dir;
-        //    if (Vector3.Dot(oriUp, trans.up) < 0)
-        //    {//hand fix rotation inverse change
-        //        trans.rotation = trans.rotation * Quaternion.Euler(0, 0, 180);
-        //    }
-        //}
-        //else if (openposeHumanoidDirMapping[openID1] == HumanoidDefaltDir.nega_fwd)
-        //{
-        //    var oriUp = trans.up;
-        //    trans.forward = -dir;
-        //    if (Vector3.Dot(oriUp, trans.up) < 0)
-        //    {//hand fix rotation inverse change
-        //        trans.rotation = trans.rotation * Quaternion.Euler(0, 0, 180);
-        //    }
-        //}
+        if (openposeHumanoidLegionDirMapping[openID1][openID2] == HumanoidDefaltDir.up)
+        {
+            VecLog(dir);
+            SafeSetDirY(trans, dir);
+        }
     }
 
     Vector3 worldPosFromUVPos(Vector2 uvPos)
