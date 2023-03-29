@@ -97,12 +97,12 @@ public class TestBoneSetter : MonoBehaviour
         openposeBodyMapping.Add(0,"");//nose
         openposeBodyMapping.Add(1, "Neck"); openposeHumanoidLegionDirMapping[1].Add(2, HumanoidDefaltDir.right); openposeHumanoidLegionDirMapping[1].Add(5, HumanoidDefaltDir.nega_right);
 
-        openposeBodyMapping.Add(2, "RightUpperArm");
-        openposeBodyMapping.Add(3, "RightLowerArm");
+        openposeBodyMapping.Add(2, "RightUpperArm"); openposeHumanoidDirMapping.Add(2, HumanoidDefaltDir.nega_up);
+        openposeBodyMapping.Add(3, "RightLowerArm"); openposeHumanoidDirMapping.Add(3, HumanoidDefaltDir.nega_up);
         openposeBodyMapping.Add(4, "RightHand");
 
-        openposeBodyMapping.Add(5, "LeftUpperArm");
-        openposeBodyMapping.Add(6, "LeftLowerArm");
+        openposeBodyMapping.Add(5, "LeftUpperArm"); openposeHumanoidDirMapping.Add(5, HumanoidDefaltDir.up);
+        openposeBodyMapping.Add(6, "LeftLowerArm"); openposeHumanoidDirMapping.Add(6, HumanoidDefaltDir.up);
         openposeBodyMapping.Add(7, "LeftHand");
 
         openposeBodyMapping.Add(8, "Hips"); openposeHumanoidDirMapping.Add(8, HumanoidDefaltDir.up);
@@ -196,6 +196,8 @@ public class TestBoneSetter : MonoBehaviour
     {
         var pv = GetComponent<PntsVisualizer>();
 
+        InitOpenposeMapping();
+
         //simple set
         //float scaleX = transform.localScale.x;
         //for(int i=0;i<25;i++)
@@ -238,10 +240,13 @@ public class TestBoneSetter : MonoBehaviour
         //(1, 2);
         //有shoulder，所以特殊一点，量的是neck to arm,修改的是shoulder，和之前的逻辑还不太一样
         //否则应该和之前一样TryMapSetRotation(1,2); neck->upperArm
-        //TryMapSetLegionPointRotation(1,2,GetBoneInxByName("rightShould"))
+        TryMapSetLegionPointRotation(1, 2, GetBoneInxByHumanName("RightShoulder"));
+        TryMapSetRotation(2, 3);
+        TryMapSetRotation(3, 4);
 
-        //TryMapSetRotation(1, 5);
-
+        TryMapSetLegionPointRotation(1, 5, GetBoneInxByHumanName("LeftShoulder"));
+        TryMapSetRotation(5, 6);
+        TryMapSetRotation(6, 7);
         //___
 
         if (loopnum == 1)
@@ -249,9 +254,27 @@ public class TestBoneSetter : MonoBehaviour
             return;
         }
         //again to make sure all updated
-        SetBodyPoseByOpenposeJson(1);
+        //SetBodyPoseByOpenposeJson(1);
     }
     //#######################################################
+    int GetBoneInxByHumanName(string humanName)
+    {
+        string boneName = GetBoneNameFromHumanName(humanName, avatar.humanDescription);
+        return GetBoneInxByName(boneName);
+    }
+
+    int GetBoneInxByName(string boneName)
+    {
+        for (int i = 0; i < skin.bones.Length; i++)
+        {
+            if (skin.bones[i].name == boneName)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     void TryMapSetRotation(int openID1,int openID2)
     {
         Vector3 dir = Vector3.zero;
@@ -333,22 +356,61 @@ public class TestBoneSetter : MonoBehaviour
         }
     }
 
-    void SetLegionHumanoidDir(int openID1, int boneInx1, Vector3 dir, int openID2)
+    void VecLog(Vector3 v)
     {
-        Transform trans = skin.bones[boneInx1].transform;
-        //Prepare
-        if (openID1 == 14)
-        {//foot to toe
-            dir = Vector3.Lerp(dir, -trans.forward, 0.5f);
+        Debug.Log(v.x + " " + v.y + " " + v.z);
+    }
+
+    void QuatLog(Quaternion v)
+    {
+        Debug.Log(v.x + " " + v.y + " " + v.z+" "+v.w );
+    }
+
+    void SafeSetDirX(Transform trans,Vector3 newX)
+    {
+        //align x-y plane,z not change
+        Vector3 up;
+        float align1 = Vector3.Dot(newX, trans.right);
+        float align2 = Vector3.Dot(newX, trans.up);
+        if (Mathf.Abs(align1)>0.999)
+        {
+            up = trans.up * Mathf.Sign(align1);
         }
+        else if(Mathf.Abs(align2) > 0.999)
+        {
+            up = trans.right * Mathf.Sign(-align2);
+        }
+        else
+        {
+            //x1(m,n) y1(p,t) x2(i,j)
+            //y2 = ax1+by1
+            //b = ka
+            //k = -(mi+nj)/(pi+tj)
+            //k = -dot(x1,x2)/dot(y1,x2)
+            float k = -Vector3.Dot(trans.right, newX) / Vector3.Dot(trans.up, newX);
+            up = (trans.right + k * trans.up).normalized;
+        }
+
+        trans.rotation = Quaternion.LookRotation(trans.forward, up);
+    }
+
+    void SetLegionHumanoidDir(int openID1, int realBone, Vector3 dir, int openID2)
+    {
+        //Debug.Log("set Legion dir");
+        Transform trans = skin.bones[realBone].transform;
+        ////Prepare
+        //if (openID1 == 14)
+        //{//foot to toe
+        //    dir = Vector3.Lerp(dir, -trans.forward, 0.5f);
+        //}
         //Do
         if(openposeHumanoidLegionDirMapping[openID1][openID2] == HumanoidDefaltDir.right)
         {
-            //...
+            SafeSetDirX(trans, dir);
         }
         else if(openposeHumanoidLegionDirMapping[openID1][openID2] == HumanoidDefaltDir.nega_right)
         {
-            //...
+            SafeSetDirX(trans, -dir);
         }
         //if (openposeHumanoidDirMapping[openID1] == HumanoidDefaltDir.up)
         //{
